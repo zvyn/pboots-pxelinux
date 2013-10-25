@@ -1,1 +1,0 @@
-PXE_BINARIES_URL = "/"
