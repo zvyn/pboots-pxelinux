@@ -1,5 +1,6 @@
-from django.db import models
 from datetime import time
+from django.db import models
+from pxelinux.ip import IPRangesField
 
 class Item(models.Model):
     title = models.CharField(max_length=79)
@@ -83,13 +84,11 @@ class Menu(models.Model):
 
 class MachineSet(models.Model):
     name = models.CharField(max_length=1023)
-    ip_from = models.IPAddressField()
-    ip_to = models.IPAddressField()
+    ip_ranges = IPRangesField(max_length=1024, store_text=True)
     menus = models.ManyToManyField(Menu, through='TimeSlot')
-    description = models.TextField(blank=True)
 
     def __str__(self):
-        return self.name + ' (' + self.ip_from + '-' + self.ip_to+ ')'
+        return self.name
 
 class MenuItem(models.Model):
     menu = models.ForeignKey(Menu)

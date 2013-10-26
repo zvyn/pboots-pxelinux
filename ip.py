@@ -1,32 +1,51 @@
 from ast import literal_eval
+from django.core.exceptions import ValidationError
+from django.utils.six import with_metaclass
 from django.db import models
-from django.forms import ValidationError
 from iptools import IpRangeList
-from iptools.ipv4 import hex2ip as ip4_hex_to_grouped_decimal
 
-class IPRangesField(models.TextField):
+class IPRanges(IpRangeList):
+    def __init__(self, value, store_text):
+        self.initial_string = value if store_text else None
+        range_list = literal_eval("[%s]" % value)
+        if type(range_list) != list:
+            raise TypeError("Not a list.")
+        super(IPRanges, self).__init__(*range_list)
 
-    description = "TODO"
+    def __str__(self):
+        if self.initial_string is None:
+            return super(IPRanges, self).__str__()[1:-1]
+        else:
+            return self.initial_string
 
+    def __eq__(self, other):
+        return repr(self) == repr(other)
+
+class IPRangesField(with_metaclass(models.SubfieldBase, models.TextField)):
     def __init__(self, *args, **kwargs):
-        kwargs["help_text"] = 'TODO'
-        super(IPRangesField, self).__init__(*args, **kwargs)
+        defaults = {
+            'store_text': True,
+        }
+        defaults.update(kwargs)
+        self.store_text = defaults.pop('store_text')
+        super(IPRangesField, self).__init__(*args, **defaults)
 
     def to_python(self, value):
-        if isinstance(value, IpRangeList):
+        if isinstance(value, IPRanges):
             return value
-        elif value == '':
-            return None
         try:
-            return IpRangeList(*literal_eval(value))
-        except (TypeError, ValueError, SyntaxError):
-            raise ValidationError('Invalid IpRange-Syntax.')
-
-    def get_internel_type(self):
-        return 'TextField'
-
-    def get_prep_value(self, value):
-        return str(value)
+            ip_range_list = IPRanges(value, self.store_text)
+            return ip_range_list
+        except:
+            return None
 
     def db_type(self, connection):
         return 'text'
+
+    def validate(self, value, model):
+        try:
+            IPRanges(value, self.store_text)
+        except Exception as e:
+            raise ValidationError(
+                "Could not interpret this as a Ip-Range-List! (Error: %s)" % e)
+
