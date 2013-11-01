@@ -1,9 +1,12 @@
+import logging
 from datetime import datetime
 from django.conf import settings
-from django.http import HttpResponse
+from django.http import HttpResponse, Http404
 from django.shortcuts import render_to_response
 from iptools.ipv4 import hex2ip as ip4_hex_to_grouped_decimal
 from pxelinux.models import MachineSet
+
+logger = logging.getLogger(__name__)
 
 def generate_config_from_x_real_ip(request):
     ip = request.META.get('X-Real-IP')
@@ -16,14 +19,25 @@ def generate_config_from_hex(request, hex_str):
 
 def generate_config(request, ip):
     now = datetime.now().time()
+    fallback_ip = '255.255.255.255'
+    timeslots = []
 
     for machines in MachineSet.objects.all():
         if ip in machines.ip_ranges:
-            timeslot = machines.timeslot_set.filter(
+            timeslots = machines.timeslot_set.filter(
                 time_start__lte=now,
-                time_end__gte=now
-            )[0]
+                time_end__gte=now)
             break
+    if not (ip == fallback_ip or len(timeslots)):
+        logger.error('No timeslot for %s at %s. Trying %s instead.'
+                    % (ip, now, fallback_ip))
+        return generate_config(request, fallback_ip)
+    elif len(timeslots):
+        timeslot = timeslots[0]
+    else:
+        logger.error('No timeslot for %s at %s. Giving up!' % (ip, now))
+        raise Http404
+
     menu = timeslot.menu
 
     if timeslot.ui != 'none':

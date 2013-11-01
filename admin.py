@@ -12,7 +12,7 @@ class SubMenuInline(admin.TabularInline):
     extra=1
 
 class MenuAdmin(admin.ModelAdmin):
-    prepopulated_fields = {'unique_label': ('title',)}
+    prepopulated_fields = {'label': ('title',)}
     inlines = [
         MenuItemInline,
         SubMenuInline,
@@ -23,7 +23,7 @@ class MenuAdmin(admin.ModelAdmin):
         }),
         ('Advanced', {
             'classes': ('collapse',),
-            'fields': ('unique_label', 'password',
+            'fields': ('label', 'password',
                        'background_image')
         })
     )
@@ -41,18 +41,14 @@ class MachineSetAdmin(admin.ModelAdmin):
 
 #region Item
 class ItemAdmin(admin.ModelAdmin):
-    prepopulated_fields = {'unique_label': ('title',)}
+    prepopulated_fields = {'label': ('menu_label',)}
     fieldsets = (
         (None, {
-            'description': """
-            Note: Special PXELINUX values can be used. 'Binary' corralates to
-            the 'KERNEL'-command and 'Options' to 'APPEND'.
-            """,
-            'fields': ('title', 'binary', 'options',)
+            'fields': ('menu_label', 'kernel', 'initrd', 'append')
         }),
         ('Advanced', {
             'classes': ('collapse',),
-            'fields': ('unique_label', 'password')
+            'fields': ('label', 'password')
         })
     )
 #endregion

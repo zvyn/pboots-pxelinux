@@ -3,14 +3,21 @@ from django.db import models
 from pxelinux.ip import IPRangesField
 
 class Item(models.Model):
-    title = models.CharField(max_length=79)
-    binary = models.CharField(max_length=2047,
-                              help_text="Example: http://linux.pool/vmlinuz")
-    options = models.CharField(
+    menu_label = models.CharField(max_length=79)
+    kernel = models.CharField(
+        max_length=2047,
+        help_text="Example: http://linux.pool/vmlinuz\nSee also:"
+            "http://www.syslinux.org/wiki/index.php/SYSLINUX#KERNEL_file\n"
+            "Use keyword 'LOCALBOOT' here for a local-boot option."
+    )
+    initrd = models.CharField(
+        max_length=2047, blank=True,
+        help_text="Example: http://linux.pool/init.img")
+    append = models.CharField(
         max_length=2047, blank=True,
         help_text="Example: initrd=http://linux.pool/init.img")
 
-    unique_label = models.SlugField(
+    label = models.SlugField(
         unique=True,
         help_text="""
         Internally PXELINUX uses labels to distinguish between entries. This
@@ -21,23 +28,24 @@ class Item(models.Model):
                                 help_text="This is transferred unencrypted.")
 
     def __str__(self):
-        return self.unique_label
+        return self.label
 
     def pxelinux_representation(self):
-        snippet = """
-                label %s
-                menu label %s
-                kernel %s
-        """ % (self.unique_label, self.title, self.binary)
-        if self.options != '':
-            snippet += """
-                append %s
-            """ % (self.options)
-        if self.password != '':
-            snippet += """
-                menu passwd %s
-            """ % (self.password)
-        return snippet
+        lines = ['',]
+        lines.append('label %s' % self.label)
+        lines.append('menu label %s' % self.menu_label)
+        if self.kernel == 'LOCALBOOT':
+            lines.append('localboot 0')
+            return "\n".join(lines)
+        else:
+            lines.append('kernel %s' % self.kernel)
+            if len(self.initrd):
+                lines.append('initrd %s' % self.initrd)
+            if len(self.append):
+                lines.append('append %s' % self.append)
+            if len(self.password):
+                lines.append('menu passwd %s' % self.password)
+        return "\n".join(lines)
 
 
 class Menu(models.Model):
@@ -49,38 +57,38 @@ class Menu(models.Model):
     password = models.CharField(max_length=10, blank=True,
                                 help_text="This is transferred unencrypted.")
     background_image = models.URLField(blank=True)
-    unique_label = models.SlugField(unique=True)
+    label = models.SlugField(unique=True)
 
     def __str__(self):
-        return self.unique_label
+        return self.label
 
     def pxelinux_representation(self, visited=None, top=None):
-        menu_cfg = "menu title %s\n" % (self.title)
+        lines = ['',]
+        lines.append("menu title %s" % self.title)
         if visited is None:
             top = self
             visited = set([self])
         if self.password != '':
-            menu_cfg += "menu master passwd %s\n" % (self.password)
+            lines.append("menu master passwd %s" % self.password)
         if self.background_image != '':
-            menu_cfg += "menu background %s \n" % (self.background_image)
+            lines.append("menu background %s" % self.background_image)
         for item in self.items.all():
-            menu_cfg += item.pxelinux_representation()
+            lines.append(item.pxelinux_representation())
         for submenu in self.menus.all():
             if submenu in visited:
-                menu_cfg += """
-                label %s
-                menu goto %s
-                menu label %s
-                """ % (submenu.unique_label, '.top' if top == submenu else submenu.unique_label, submenu.title)
+                lines.append('label %s' % submenu.label)
+                if top == submenu:
+                    lines.append('menu goto .top')
+                else:
+                    lines.append('menu goto %s' % submenu.label)
+                lines.append('menu label %s' % submenu.title)
             else:
                 visited.add(submenu)
-                menu_cfg += """
-                menu begin %s
-                %s
-                """ % (submenu.unique_label,
-                    submenu.pxelinux_representation(visited=visited, top=top))
-                menu_cfg += "menu end\n"
-        return menu_cfg
+                lines.append('menu begin %s' % submenu.label)
+                lines.append(submenu.pxelinux_representation(
+                    visited=visited, top=top))
+                lines.append('menu end')
+        return "\n".join(lines)
 
 class MachineSet(models.Model):
     name = models.CharField(max_length=1023)
