@@ -1,5 +1,6 @@
 from datetime import time
 from django.db import models
+from django.contrib.auth.models import User
 from pxelinux.ip import IPRangesField
 
 class Item(models.Model):
@@ -92,8 +93,9 @@ class Menu(models.Model):
 
 class MachineSet(models.Model):
     name = models.CharField(max_length=1023)
-    ip_ranges = IPRangesField(max_length=1024, store_text=True)
+    ip_ranges = IPRangesField(max_length=1024, store_text=True, blank=True)
     menus = models.ManyToManyField(Menu, through='TimeSlot')
+    owner = models.ForeignKey(User, related_name='machine_sets')
 
     def __str__(self):
         return self.name

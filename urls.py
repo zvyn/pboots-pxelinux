@@ -10,4 +10,6 @@ urlpatterns = patterns(
         views.generate_config_from_hex),
     url(r'^(?:pxelinux.cfg/)?((?:[1-2]?[0-9]?[0-9]\.?){4})/?$',
         views.generate_config),
+    url(r'^(?:pxelinux.cfg/)?set/(.*)/?$',
+        views.generate_config_from_machine_set_name),
 )

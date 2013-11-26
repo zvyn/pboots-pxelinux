@@ -8,6 +8,11 @@ from pxelinux.models import MachineSet
 
 logger = logging.getLogger(__name__)
 
+def generate_config_from_machine_set_name(request, machine_set_name):
+    machine_set = MachineSet.objects.get(name=machine_set_name)
+    ip = machine_set.ip_ranges.ips[0][0]
+    return generate_config(request, ip)
+
 def generate_config_from_x_real_ip(request):
     ip = request.META.get('X-Real-IP')
     if ip is None:
@@ -52,4 +57,4 @@ def generate_config(request, ip):
         item = menu.items.all()[0]
         return HttpResponse(
             "DEFAULT %s\n%s" %
-            (item.unique_label, item.pxelinux_representation()))
+            (item.label, item.pxelinux_representation()))
