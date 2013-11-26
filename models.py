@@ -73,8 +73,8 @@ class Menu(models.Model):
             lines.append("menu master passwd %s" % self.password)
         if self.background_image != '':
             lines.append("menu background %s" % self.background_image)
-        for item in self.items.all():
-            lines.append(item.pxelinux_representation())
+        for menu_item in self.menuitem_set.all():
+            lines.append(menu_item.item.pxelinux_representation())
         for submenu in self.menus.all():
             if submenu in visited:
                 lines.append('label %s' % submenu.label)
