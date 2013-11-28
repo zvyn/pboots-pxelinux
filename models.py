@@ -52,7 +52,7 @@ class Item(models.Model):
 class Menu(models.Model):
     title = models.CharField(max_length=79)
     items = models.ManyToManyField(Item, through='MenuItem', blank=True)
-    menus = models.ManyToManyField('self', through='SubMenu', blank=True,
+    menus = models.ManyToManyField('self', through='MenuRelation', blank=True,
                                    symmetrical=False)
 
     password = models.CharField(max_length=10, blank=True,
@@ -75,7 +75,8 @@ class Menu(models.Model):
             lines.append("menu background %s" % self.background_image)
         for menu_item in self.menuitem_set.all():
             lines.append(menu_item.item.pxelinux_representation())
-        for submenu in self.menus.all():
+        for menu_relation in self.sub_menu.all():
+            submenu = menu_relation.super_menu
             if submenu in visited:
                 lines.append('label %s' % submenu.label)
                 if top == submenu:
@@ -108,10 +109,13 @@ class MenuItem(models.Model):
     class Meta:
         ordering = ['priority']
 
-class SubMenu(models.Model):
-    super_menu = models.ForeignKey(Menu, related_name='sub_menu')
-    sub_menu = models.ForeignKey(Menu, related_name='super_menu')
+class MenuRelation(models.Model):
+    super_menu = models.ForeignKey(Menu, related_name='super_menu')
+    sub_menu = models.ForeignKey(Menu, related_name='sub_menu')
     priority = models.IntegerField()
+
+    def __str__(self):
+        return "%s\%s" % (self.super_menu, self.sub_menu)
 
     class Meta:
         ordering = ['priority']

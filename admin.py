@@ -1,12 +1,12 @@
 from django.contrib import admin
-from pxelinux.models import Item, Menu, MachineSet, MenuItem, SubMenu, TimeSlot
+from pxelinux.models import Item, Menu, MachineSet, MenuItem, MenuRelation, TimeSlot
 
 #region Menu
 class MenuItemInline(admin.TabularInline):
     model = Menu.items.through
     extra = 1
 
-class SubMenuInline(admin.TabularInline):
+class MenuRelationInline(admin.TabularInline):
     model = Menu.menus.through
     fk_name = 'sub_menu'
     extra=1
@@ -15,7 +15,7 @@ class MenuAdmin(admin.ModelAdmin):
     prepopulated_fields = {'label': ('title',)}
     inlines = [
         MenuItemInline,
-        SubMenuInline,
+        MenuRelationInline,
     ]
     fieldsets = (
         (None, {
