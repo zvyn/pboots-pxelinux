@@ -54,7 +54,7 @@ def generate_config(request, ip):
         }
         return render_to_response("menu.cfg", context)
     else:
-        item = menu.items.all()[0]
+        item = menu.menuitem_set.all()[0].item
         return HttpResponse(
             "DEFAULT %s\n%s" %
             (item.label, item.pxelinux_representation()))
