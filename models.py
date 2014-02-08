@@ -48,7 +48,6 @@ class Item(models.Model):
                 lines.append('menu passwd %s' % self.password)
         return "\n".join(lines)
 
-
 class Menu(models.Model):
     title = models.CharField(max_length=79)
     items = models.ManyToManyField(Item, through='MenuItem', blank=True)
@@ -59,9 +58,10 @@ class Menu(models.Model):
                                 help_text="This is transferred unencrypted.")
     background_image = models.URLField(blank=True)
     label = models.SlugField(unique=True)
+    owner = models.ForeignKey(User)
 
     def __str__(self):
-        return self.label
+        return "%s from %s" % (self.label, self.owner)
 
     def pxelinux_representation(self, visited=None, top=None):
         lines = ['',]
@@ -91,6 +91,18 @@ class Menu(models.Model):
                     visited=visited, top=top))
                 lines.append('menu end')
         return "\n".join(lines)
+
+    def pretty_print(self):
+        lines = ['Items:',]
+        for menu_item in self.menuitem_set.all():
+            lines.append('"%s" (%s)' % (menu_item.item.menu_label,
+                                       menu_item.item))
+        lines.append('Sebmenus:')
+        for menu_relation in self.sub_menu.all():
+            lines.append('"%s" (%s)' % (menu_relation.super_menu.title,
+                                       menu_relation.super_menu))
+        return "\n".join(lines)
+
 
 class MachineSet(models.Model):
     name = models.CharField(max_length=1023)
