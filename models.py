@@ -3,36 +3,47 @@ from django.db import models
 from django.contrib.auth.models import User
 from pxelinux.ip import IPRangesField
 
+
 class Item(models.Model):
-    menu_label = models.CharField(max_length=79)
+    """
+    Collection of data needed for a boot loader to start an operating system
+    or to present it to the user.
+    """
+    menu_label = models.CharField(
+        max_length=79,
+        help_text="Title of the item. Used as representation in boot menus.")
     kernel = models.CharField(
         max_length=2047,
-        help_text="Example: http://linux.pool/vmlinuz\nSee also:"
-            "http://www.syslinux.org/wiki/index.php/SYSLINUX#KERNEL_file\n"
-            "Use keyword 'LOCALBOOT' here for a local-boot option."
-    )
+        help_text=
+        "Path to the operating system binary (mostly a Linux-Kernel, more at "
+        "http://www.syslinux.org/wiki/index.php/SYSLINUX#KERNEL_file).")
     initrd = models.CharField(
-        max_length=2047, blank=True,
-        help_text="Example: http://linux.pool/init.img")
+        max_length=2047,
+        blank=True,
+        help_text="Path to an initramfs, if any.")
     append = models.CharField(
-        max_length=2047, blank=True,
-        help_text="Example: initrd=http://linux.pool/init.img")
-
+        max_length=2047,
+        blank=True,
+        help_text="Command-line arguments for the kernel.")
     label = models.SlugField(
         unique=True,
-        help_text="""
-        Internally PXELINUX uses labels to distinguish between entries. This
-        field can also be useful to distinguish entries with the same
-        menu-label but different binary/options.
-        """)
-    password = models.CharField(max_length=10, blank=True,
-                                help_text="This is transferred unencrypted.")
+        help_text=
+        "Unique descriptive identifier for the item. Used by admins and "
+        "PXELINUX to re-identify items.")
+    password = models.CharField(
+        max_length=10,
+        blank=True,
+        help_text=
+        "If set, users have to type the given password to boot this item.")
 
     def __str__(self):
         return self.label
 
     def pxelinux_representation(self):
-        lines = ['',]
+        """
+        Generates a PXELINUX-Configuration containing only the given item.
+        """
+        lines = ['', ]
         lines.append('label %s' % self.label)
         lines.append('menu label %s' % self.menu_label)
         if self.kernel == 'LOCALBOOT':
@@ -48,23 +59,54 @@ class Item(models.Model):
                 lines.append('menu passwd %s' % self.password)
         return "\n".join(lines)
 
-class Menu(models.Model):
-    title = models.CharField(max_length=79)
-    items = models.ManyToManyField(Item, through='MenuItem', blank=True)
-    menus = models.ManyToManyField('self', through='MenuRelation', blank=True,
-                                   symmetrical=False)
 
-    password = models.CharField(max_length=10, blank=True,
-                                help_text="This is transferred unencrypted.")
-    background_image = models.URLField(blank=True)
-    label = models.SlugField(unique=True)
-    owner = models.ForeignKey(User)
+class Menu(models.Model):
+    """
+    Database-representation of a boot menu.
+    """
+    title = models.CharField(
+        max_length=79,
+        help_text="Used as entry-title when used as sub-menu.")
+    items = models.ManyToManyField(
+        Item,
+        through='MenuItem',
+        blank=True,
+        help_text="Items to show in this menu.")
+    menus = models.ManyToManyField(
+        'self',
+        through='MenuRelation',
+        blank=True,
+        symmetrical=False,
+        help_text="Sub-menus to show at the end of this menu.")
+    password = models.CharField(
+        max_length=10,
+        blank=True,
+        help_text=
+        "If set the user has to type in the given password to switch into "
+        "this menu (if it is used as sub-menu) or go to the PXELINUX command "
+        "prompt (if this menu is set as main-menu).")
+    background_image = models.URLField(
+        blank=True,
+        help_text=
+        "HTTP-URL to an Image of the size 640x480 in PNG or JPEG format.")
+    label = models.SlugField(
+        unique=True,
+        help_text=
+        "Unique descriptive identifier for the menu. Used by admins and "
+        "PXELINUX to re-identify menus.")
+    owner = models.ForeignKey(
+        User,
+        help_text="Only the given user and super-users can modify this menu.")
 
     def __str__(self):
         return "%s from %s" % (self.label, self.owner)
 
     def pxelinux_representation(self, visited=None, top=None):
-        lines = ['',]
+        """
+        Generates a menu-structure in PXELINUX configuration syntax. All linked
+        sub-menus get included (exactly once).
+        """
+        lines = ['', ]
         lines.append("menu title %s" % self.title)
         if visited is None:
             top = self
@@ -93,27 +135,48 @@ class Menu(models.Model):
         return "\n".join(lines)
 
     def pretty_print(self):
-        lines = ['Items:',]
+        """
+        Presentation of the menu in text format. Shows a list of all entries
+        grouped in Items and Sub-menus.
+        """
+        lines = ['Items:', ]
         for menu_item in self.menuitem_set.all():
             lines.append('"%s" (%s)' % (menu_item.item.menu_label,
-                                       menu_item.item))
-        lines.append('Sebmenus:')
+                                        menu_item.item))
+        lines.append('Sub-menus:')
         for menu_relation in self.sub_menu.all():
             lines.append('"%s" (%s)' % (menu_relation.super_menu.title,
-                                       menu_relation.super_menu))
+                                        menu_relation.super_menu))
         return "\n".join(lines)
 
 
 class MachineSet(models.Model):
-    name = models.CharField(max_length=1023)
-    ip_ranges = IPRangesField(max_length=1024, store_text=True, blank=True)
+    """
+    Represents a set of clients, identified by their IP-addresses, and their
+    relation to TimeSlot-Objects and owner.
+    """
+    name = models.CharField(
+        max_length=1023,
+        help_text="Descriptive name.")
+    ip_ranges = IPRangesField(
+        max_length=1024,
+        store_text=True,
+        blank=True,
+        help_text=
+        "List of IP-addresses or IP-address-ranges. For example:\" "
+        "'127.0.0.1', '192.168/16', ('10.0.0.1', '10.0.0.19'), '::1', "
+        "'fe80::/10', '::ffff:172.16.0.2'\"")
     menus = models.ManyToManyField(Menu, through='TimeSlot')
     owner = models.ForeignKey(User, related_name='machine_sets')
 
     def __str__(self):
         return self.name
 
+
 class MenuItem(models.Model):
+    """
+    Specifies the relation between an item and a menu.
+    """
     menu = models.ForeignKey(Menu)
     item = models.ForeignKey(Item)
     priority = models.IntegerField()
@@ -121,7 +184,11 @@ class MenuItem(models.Model):
     class Meta:
         ordering = ['priority']
 
+
 class MenuRelation(models.Model):
+    """
+    Specifies relations between menus.
+    """
     super_menu = models.ForeignKey(Menu, related_name='super_menu')
     sub_menu = models.ForeignKey(Menu, related_name='sub_menu')
     priority = models.IntegerField()
@@ -132,7 +199,13 @@ class MenuRelation(models.Model):
     class Meta:
         ordering = ['priority']
 
+
 class TimeSlot(models.Model):
+    """
+    Specifies the relation between a menu and a machine-set and defines a
+    time-span in which the relation should be interpreted as active (causing
+    machines to boot according to it).
+    """
     machine_set = models.ForeignKey(MachineSet)
     menu = models.ForeignKey(Menu)
     time_start = models.TimeField(default=time(hour=0, minute=0, second=0))
@@ -140,12 +213,13 @@ class TimeSlot(models.Model):
     priority = models.IntegerField(default=50)
     ui = models.CharField(
         max_length=4,
-        choices = (
+        choices=(
             ('none', 'Direct Boot'),
             ('vesa', 'Graphical Menu'),
             ('text', 'Text Menu')))
-    timeout = models.SmallIntegerField(default=100)
+    timeout = models.SmallIntegerField(
+        default=100,
+        help_text="in deciseconds")
 
     class Meta:
         ordering = ['priority', 'time_start', 'time_end']
-
