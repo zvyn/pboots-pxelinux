@@ -1,6 +1,10 @@
 from django.conf.urls import patterns, url
 from pxelinux import views
 
+"""
+Defines patterns to search for in request-URLs and passes matches to functions
+in views.py.
+"""
 urlpatterns = patterns(
     '',
     url(r'^(?:pxelinux.cfg/)?default/?$',

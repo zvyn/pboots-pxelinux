@@ -11,6 +11,9 @@ logger = logging.getLogger(__name__)
 
 
 def generate_config_from_machine_set_name(request, machine_set_name):
+    """
+    Get the name of a machine-set and generate the corresponding configuration.
+    """
     machine_set = MachineSet.objects.get(name=machine_set_name)
     ip = machine_set.ip_ranges.ips[0][0]
     return generate_config(request, ip)
@@ -46,12 +49,16 @@ def generate_config(request, ip):
     fallback_ip = '255.255.255.255'
     timeslots = []
 
+    # Get the right TimeSlot.
     for machines in MachineSet.objects.all():
         if ip in machines.ip_ranges:
             timeslots = machines.timeslot_set.filter(
                 time_start__lte=now,
                 time_end__gte=now)
             break
+
+    # Fall back to fallback_ip if none was found or raise Http404 if that
+    # already failed.
     if not (ip == fallback_ip or len(timeslots)):
         logger.error('No timeslot for %s at %s. Trying %s instead.'
                      % (ip, now, fallback_ip))
@@ -62,8 +69,8 @@ def generate_config(request, ip):
         logger.error('No timeslot for %s at %s. Giving up!' % (ip, now))
         raise Http404
 
+    # Generate the configuration.
     menu = timeslot.menu
-
     if timeslot.ui != 'none':
         context = {
             'menu_binary': settings.STATIC_URL + (
