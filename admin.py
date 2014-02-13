@@ -82,7 +82,7 @@ class MenuAdmin(admin.ModelAdmin):
 
 class TimeSlotInline(admin.TabularInline):
     model = MachineSet.menus.through
-    extra = 2
+    extra = 1
 
 
 class MachineSetAdmin(admin.ModelAdmin):
