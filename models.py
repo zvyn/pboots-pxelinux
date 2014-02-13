@@ -111,8 +111,8 @@ class Menu(models.Model):
         if visited is None:
             top = self
             visited = set([self])
-        if self.password != '':
-            lines.append("menu master passwd %s" % self.password)
+            if self.password != '':
+                lines.append("menu master passwd %s" % self.password)
         if self.background_image != '':
             lines.append("menu background %s" % self.background_image)
         for menu_item in self.menuitem_set.all():
@@ -129,6 +129,8 @@ class Menu(models.Model):
             else:
                 visited.add(submenu)
                 lines.append('menu begin %s' % submenu.label)
+                if submenu.password != '':
+                    lines.append("menu passwd %s" % submenu.password)
                 lines.append(submenu.pxelinux_representation(
                     visited=visited, top=top))
                 lines.append('menu end')
