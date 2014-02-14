@@ -57,7 +57,7 @@ class Item(models.Model):
                 lines.append('append %s' % self.append)
             if len(self.password):
                 lines.append('menu passwd %s' % self.password)
-            lines.append('ipappend 1')
+            lines.append('ipappend 3')
         return "\n".join(lines)
 
 
