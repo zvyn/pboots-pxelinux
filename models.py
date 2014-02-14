@@ -53,11 +53,11 @@ class Item(models.Model):
             lines.append('kernel %s' % self.kernel)
             if len(self.initrd):
                 lines.append('initrd %s' % self.initrd)
+                lines.append('ipappend 1')
             if len(self.append):
                 lines.append('append %s' % self.append)
             if len(self.password):
                 lines.append('menu passwd %s' % self.password)
-            lines.append('ipappend 1')
         return "\n".join(lines)
 
 
