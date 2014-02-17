@@ -110,7 +110,7 @@ class ItemAdmin(admin.ModelAdmin):
         }),
         ('Advanced', {
             'classes': ('collapse',),
-            'fields': ('label', 'password')
+            'fields': ('label', 'password', 'ipappend')
         })
     )
 

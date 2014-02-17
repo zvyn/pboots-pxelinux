@@ -35,6 +35,15 @@ class Item(models.Model):
         blank=True,
         help_text=
         "If set, users have to type the given password to boot this item.")
+    ipappend = models.CharField(
+        max_length=3,
+        choices=(
+            ('no', ''),
+            ('yes', '1'),
+        ),
+        blank=True,
+        default=''
+    )
 
     def __str__(self):
         return self.label
