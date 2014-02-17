@@ -38,8 +38,8 @@ class Item(models.Model):
     ipappend = models.CharField(
         max_length=3,
         choices=(
-            ('no', ''),
-            ('yes', '1'),
+            ('', 'no'),
+            ('1', 'yes'),
         ),
         blank=True,
         default=''
