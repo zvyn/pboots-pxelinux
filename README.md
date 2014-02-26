@@ -16,7 +16,7 @@ The boot configuration is done with the Django admin module based on the
 `models.py` and `admin.py` files. So here is a minimal step-by-step how-to:
 
 1. Configure your installation according to the [README.md from
-   pboots](https://github.com/zvyn/pboots/README.md)
+   pboots](https://github.com/zvyn/pboots/blob/master/README.md)
 2. Go to `https://example.com/cfg`.
 3. Click `add Item`.
 4. Fill out the form.
