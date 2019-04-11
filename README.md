@@ -1,26 +1,27 @@
 pboots/pxelinux
 ---------------
 
-pboots/pxelinux is an Django application which enables you to serve PXELINUX
-configuration files dynamically based on the IP-address of the client and the
-current time.
-It is was build with scalability in mind. Thousands of clients with hundreds of
-different configurations should be perfectly fine with an Raspberry Pi as
-Server.
+A Django app serving PXELINUX configuration based on time and client IP.
 
-### configuration
+Use this app to manage the boot-behaviour of PXE clients (e.g. PCs in a computer
+lab) where the desired OS depends on time and network address of the client.
 
-See my [pboots repo](https://github.com/zvyn/pboots/) for an working Django
-setup with sample configurations for nginx and uwsgi.
-The boot configuration is done with the Django admin module based on the
-`models.py` and `admin.py` files. So here is a minimal step-by-step how-to:
+### Configuration
 
-1. Configure your installation according to the [README.md from
-   pboots](https://github.com/zvyn/pboots/blob/master/README.md)
-2. Go to `https://example.com/cfg`.
-3. Click `add Item`.
-4. Fill out the form.
-5. Repeat 3 and 4 for `menu` and `machine set`.
-6. Boot the client.
-7. ???
-8. Have fun.
+[pboots](https://github.com/zvyn/pboots/) contains this repo as submodule.
+Go there for a Django project with nginx and uwsgi sample configuration files.
+
+### Usage
+
+To specify which client boots what and when:
+
+1. Go to `/cfg`, click `add Item`, fill out the form and save.
+2. Repeat the previous step with `add Menu` and `add Machine Set`.
+3. Boot the client(s).
+
+### Scalabilety
+
+Thousands of clients with hundreds of different configurations should be
+perfectly fine with a Raspberry Pi as server. Keep in mind that this app serves
+PXE configuration files only, not the OS images wich can (and typically should)
+come form another machine.
