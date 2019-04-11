@@ -28,20 +28,16 @@ class IPRanges(IpRangeList):
         return repr(self) == repr(other)
 
 
-class IPRangesField(with_metaclass(models.SubfieldBase, models.TextField)):
+class IPRangesField(models.TextField):
     """
     Database field to store IP-address ranges in different syntax but
     unambiguous meaning. Supported notation derives from the possible
     parameters to iptools.IpRangeList
     (see http://python-iptools.readthedocs.org/en/latest/).
     """
-    def __init__(self, *args, **kwargs):
-        defaults = {
-            'store_text': True,
-        }
-        defaults.update(kwargs)
-        self.store_text = defaults.pop('store_text')
-        super(IPRangesField, self).__init__(*args, **defaults)
+    def __init__(self, *args, store_text=True, **kwargs):
+        self.store_text = store_text
+        super(IPRangesField, self).__init__(*args, **kwargs)
 
     def to_python(self, value):
         """
@@ -53,11 +49,16 @@ class IPRangesField(with_metaclass(models.SubfieldBase, models.TextField)):
         try:
             ip_range_list = IPRanges(value, self.store_text)
             return ip_range_list
-        except Exception as e:
+        except Exception:
             raise ValidationError(
                 'Invalid value: %s' % value,
                 code='invalid',
             )
+
+    def from_db_value(self, value, *args):
+        if not value:
+            return value
+        return IPRanges(value, True)
 
     def db_type(self, connection):
         return 'text'

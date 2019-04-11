@@ -14,7 +14,7 @@ class Item(models.Model):
         help_text="Title of the item. Used as representation in boot menus.")
     kernel = models.CharField(
         max_length=2047,
-        help_text=
+        help_text=""
         "Path to the operating system binary (mostly a Linux-Kernel, more at "
         "http://www.syslinux.org/wiki/index.php/SYSLINUX#KERNEL_file).")
     initrd = models.CharField(
@@ -27,13 +27,13 @@ class Item(models.Model):
         help_text="Command-line arguments for the kernel.")
     label = models.SlugField(
         unique=True,
-        help_text=
+        help_text=""
         "Unique descriptive identifier for the item. Used by admins and "
         "PXELINUX to re-identify items.")
     password = models.CharField(
         max_length=10,
         blank=True,
-        help_text=
+        help_text=""
         "If set, users have to type the given password to boot this item.")
     ipappend = models.CharField(
         max_length=3,
@@ -107,7 +107,8 @@ class Menu(models.Model):
         "PXELINUX to re-identify menus.")
     owner = models.ForeignKey(
         User,
-        help_text="Only the given user and super-users can modify this menu.")
+        help_text="Only the given user and super-users can modify this menu.",
+        on_delete=models.CASCADE)
 
     def __str__(self):
         return "%s from %s" % (self.label, self.owner)
@@ -180,7 +181,7 @@ class MachineSet(models.Model):
         "'127.0.0.1', '192.168/16', ('10.0.0.1', '10.0.0.19'), '::1', "
         "'fe80::/10', '::ffff:172.16.0.2'\"")
     menus = models.ManyToManyField(Menu, through='TimeSlot')
-    owner = models.ForeignKey(User, related_name='machine_sets')
+    owner = models.ForeignKey(User, related_name='machine_sets', on_delete=models.CASCADE)
 
     def __str__(self):
         return self.name
@@ -190,8 +191,8 @@ class MenuItem(models.Model):
     """
     Specifies the relation between an item and a menu.
     """
-    menu = models.ForeignKey(Menu)
-    item = models.ForeignKey(Item)
+    menu = models.ForeignKey(Menu, on_delete=models.CASCADE)
+    item = models.ForeignKey(Item, on_delete=models.CASCADE)
     priority = models.IntegerField()
 
     class Meta:
@@ -202,8 +203,8 @@ class MenuRelation(models.Model):
     """
     Specifies relations between menus.
     """
-    super_menu = models.ForeignKey(Menu, related_name='super_menu')
-    sub_menu = models.ForeignKey(Menu, related_name='sub_menu')
+    super_menu = models.ForeignKey(Menu, related_name='super_menu', on_delete=models.CASCADE)
+    sub_menu = models.ForeignKey(Menu, related_name='sub_menu', on_delete=models.CASCADE)
     priority = models.IntegerField()
 
     def __str__(self):
@@ -219,8 +220,8 @@ class TimeSlot(models.Model):
     time-span in which the relation should be interpreted as active (causing
     machines to boot according to it).
     """
-    machine_set = models.ForeignKey(MachineSet)
-    menu = models.ForeignKey(Menu)
+    machine_set = models.ForeignKey(MachineSet, on_delete=models.CASCADE)
+    menu = models.ForeignKey(Menu, on_delete=models.CASCADE)
     time_start = models.TimeField(default=time(hour=0, minute=0, second=0))
     time_end = models.TimeField(default=time(hour=23, minute=59, second=59))
     priority = models.IntegerField(default=50)

@@ -1,4 +1,4 @@
-from django.conf.urls import patterns, url
+from django.conf.urls import url
 from pxelinux import views
 
 """
@@ -11,8 +11,7 @@ _IPv6_PATTERN = r'^(?:pxelinux.cfg/)?((?:[0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}
 Defines patterns to search for in request-URLs and passes matches to functions
 in views.py.
 """
-urlpatterns = patterns(
-    '',
+urlpatterns = [
     url(r'^(?:pxelinux.cfg/)?default/?$',
         views.generate_config_from_x_real_ip),
     url(r'^(?:pxelinux.cfg/)?((?:[A-F]|[0-9]){8})/?$',
@@ -23,4 +22,4 @@ urlpatterns = patterns(
         views.generate_config),
     url(r'^(?:pxelinux.cfg/)?set/(.*)/?$',
         views.generate_config_from_machine_set_name),
-)
+]
